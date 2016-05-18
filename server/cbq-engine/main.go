@@ -76,14 +76,11 @@ var COMPLETED_THRESHOLD = flag.Int("completed-threshold", 1000, "cache completed
 var COMPLETED_LIMIT = flag.Int("completed-limit", 4000, "maximum number of completed requests")
 
 func getOsGogc() int {
-
 	// since there is no getter for GOGC, we get it to see if its 100, and immediately set it again if it wasn't
 	origGCSetting := debug.SetGCPercent(100)
-
 	if origGCSetting != 100 {
 		debug.SetGCPercent(origGCSetting)
 	}
-
 	return int(origGCSetting)
 }
 
