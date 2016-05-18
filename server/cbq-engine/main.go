@@ -33,6 +33,7 @@ import (
 	"github.com/couchbase/query/server"
 	"github.com/couchbase/query/server/http"
 	"github.com/couchbase/query/util"
+	"runtime/debug"
 )
 
 var DATASTORE = flag.String("datastore", "", "Datastore address (http://URL or dir:PATH or mock:)")
@@ -64,6 +65,7 @@ var STATIC_PATH = flag.String("static-path", "static", "Path to static content")
 var PIPELINE_CAP = flag.Int("pipeline-cap", 512, "Maximum number of items each execution operator can buffer")
 var PIPELINE_BATCH = flag.Int("pipeline-batch", 16, "Number of items execution operators can batch")
 var ENTERPRISE = flag.Bool("enterprise", true, "Enterprise mode")
+var GCPERCENT = flag.Int("gc-percent", getOsGogc(), "Go runtime garbage collection target percentage")
 
 //cpu and memory profiling flags
 var CPU_PROFILE = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -72,6 +74,18 @@ var MEM_PROFILE = flag.String("memprofile", "", "write memory profile to this fi
 // Monitoring API
 var COMPLETED_THRESHOLD = flag.Int("completed-threshold", 1000, "cache completed query lasting longer than this many milliseconds")
 var COMPLETED_LIMIT = flag.Int("completed-limit", 4000, "maximum number of completed requests")
+
+func getOsGogc() int {
+
+	// since there is no getter for GOGC, we get it to see if its 100, and immediately set it again if it wasn't
+	origGCSetting := debug.SetGCPercent(100)
+
+	if origGCSetting != 100 {
+		debug.SetGCPercent(origGCSetting)
+	}
+
+	return int(origGCSetting)
+}
 
 func main() {
 	HideConsole(true)
@@ -147,7 +161,7 @@ func main() {
 
 	server, err := server.NewServer(datastore, sys, configstore, acctstore, *NAMESPACE,
 		*READONLY, channel, plusChannel, *SERVICERS, *PLUS_SERVICERS,
-		*MAX_PARALLELISM, *TIMEOUT, *SIGNATURE, *METRICS, *ENTERPRISE)
+		*MAX_PARALLELISM, *TIMEOUT, *SIGNATURE, *METRICS, *ENTERPRISE, *GCPERCENT)
 	if err != nil {
 		logging.Errorp(err.Error())
 		os.Exit(1)
@@ -189,6 +203,7 @@ func main() {
 		logging.Pair{"loglevel", logging.LogLevel().String()},
 		logging.Pair{"servicers", server.Servicers()},
 		logging.Pair{"plus-servicers", server.PlusServicers()},
+		logging.Pair{"gc-percent", server.GcPercent()},
 		logging.Pair{"pipeline-cap", server.PipelineCap()},
 		logging.Pair{"pipeline-batch", *PIPELINE_BATCH},
 		logging.Pair{"request-cap", *REQUEST_CAP},

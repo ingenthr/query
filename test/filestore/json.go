@@ -228,7 +228,7 @@ func Start(site, pool string) *MockServer {
 	// the variable and not the package...
 	server.SetActives(http.NewActiveRequests())
 	server, err := server.NewServer(datastore, sys, configstore, acctstore, "json",
-		false, channel, plusChannel, 4, 4, 0, 0, false, false, false)
+		false, channel, plusChannel, 4, 4, 0, 0, false, false, false, 100)
 	if err != nil {
 		logging.Errorp(err.Error())
 		os.Exit(1)

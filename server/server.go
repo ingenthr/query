@@ -14,6 +14,7 @@ import (
 	"math"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"runtime/pprof"
 	"sync"
 	"time"
@@ -60,6 +61,7 @@ type Server struct {
 	memprofile  string
 	cpuprofile  string
 	enterprise  bool
+	gcpercent   int
 }
 
 // Default Keep Alive Length
@@ -69,7 +71,7 @@ const KEEP_ALIVE_DEFAULT = 1024 * 16
 func NewServer(store datastore.Datastore, sys datastore.Datastore, config clustering.ConfigurationStore,
 	acctng accounting.AccountingStore, namespace string, readonly bool,
 	channel, plusChannel RequestChannel, servicers, plusServicers, maxParallelism int,
-	timeout time.Duration, signature, metrics bool, enterprise bool) (*Server, errors.Error) {
+	timeout time.Duration, signature, metrics bool, enterprise bool, gcpercent int) (*Server, errors.Error) {
 	rv := &Server{
 		datastore:   store,
 		systemstore: sys,
@@ -85,6 +87,7 @@ func NewServer(store datastore.Datastore, sys datastore.Datastore, config cluste
 		done:        make(chan bool),
 		plusDone:    make(chan bool),
 		enterprise:  enterprise,
+		gcpercent:   gcpercent,
 	}
 
 	// special case handling for the atomic specfic stuff
@@ -294,6 +297,16 @@ func (this *Server) SetPlusServicers(plusServicers int) {
 	// Start new set of servicers
 	this.plusDone = make(chan bool)
 	go this.PlusServe()
+}
+
+func (this *Server) GcPercent() int {
+	return int(this.gcpercent)
+}
+
+func (this *Server) SetGcPercent(gcpercent int) {
+	logging.Infof("SetGcPercent - setting garbage collection percentage to %d from %d", gcpercent, this.gcpercent)
+	this.gcpercent = gcpercent
+	debug.SetGCPercent(this.gcpercent)
 }
 
 func (this *Server) Timeout() time.Duration {
