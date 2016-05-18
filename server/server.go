@@ -90,7 +90,7 @@ func NewServer(store datastore.Datastore, sys datastore.Datastore, config cluste
 		gcpercent:   gcpercent,
 	}
 
-	// special case handling for the atomic specfic stuff
+	// special case handling for the atomic specific stuff
 	atomic.StoreInt64(&rv.servicers, int64(servicers))
 	atomic.StoreInt64(&rv.plusServicers, int64(plusServicers))
 
